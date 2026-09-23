@@ -10,7 +10,8 @@ export const splitTool: Tool = {
   title: "Split PDF",
   blurb: "Split into single pages, equal parts or custom page ranges.",
   group: "Organize",
-  icon: '<path d="M6 3v7a4 4 0 0 0 4 4h0M18 3v7a4 4 0 0 1-4 4h0M12 14v7"/>',
+  icon: '<circle cx="6" cy="6.5" r="2.5"/><circle cx="6" cy="17.5" r="2.5"/><path d="M8.2 7.8 20 16M8.2 16.2 20 8"/>',
+  tint: "#FF2D55",
   render(root) {
     let pdf: OpenedPdf | null = null;
     let mode: Mode = "each";

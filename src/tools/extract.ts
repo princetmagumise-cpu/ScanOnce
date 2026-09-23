@@ -9,7 +9,8 @@ export const extractTool: Tool = {
   title: "Extract",
   blurb: "Pull out the text, the images or selected pages of a PDF.",
   group: "Organize",
-  icon: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/><path d="M12 11v6m0 0-3-3m3 3 3-3"/>',
+  icon: '<path d="M13.5 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5Z"/><path d="M12 17.5v-7m0 0-3 3m3-3 3 3"/>',
+  tint: "#A2845E",
   render(root) {
     let pdf: OpenedPdf | null = null;
     const out = h("div");

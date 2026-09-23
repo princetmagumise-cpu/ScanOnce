@@ -10,7 +10,8 @@ export const ocrTool: Tool = {
   title: "OCR PDF",
   blurb: "Turn scans and photos into searchable, copyable text.",
   group: "Optimize & fix",
-  icon: '<path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2"/><path d="M8 9h8M8 12h8M8 15h5"/>',
+  icon: '<path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M8.5 9h7M12 9v7"/>',
+  tint: "#AF52DE",
   render(root) {
     let files: File[] = [];
     const out = h("div");

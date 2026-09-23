@@ -8,7 +8,8 @@ export const lockTool: Tool = {
   title: "Lock any file",
   blurb: "Password-lock Word, Excel, PowerPoint, photos or any file.",
   group: "Security",
-  icon: '<path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6Z"/><path d="M9.5 12.5 11 14l3.5-3.5"/>',
+  icon: '<circle cx="7.5" cy="15.5" r="4"/><path d="M10.4 12.6 20 3m-3.5 3.5L19 9m-5-.5 2 2"/>',
+  tint: "#636366",
   render(root) {
     let mode: "lock" | "unlock" = "lock";
     let files: File[] = [];

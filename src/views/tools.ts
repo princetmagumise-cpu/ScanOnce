@@ -1,4 +1,4 @@
-import { h, icon } from "../ui";
+import { h, toolTile } from "../ui";
 import { TOOLS, GROUPS } from "../tools";
 
 export function renderTools(root: HTMLElement) {
@@ -10,7 +10,7 @@ export function renderTools(root: HTMLElement) {
         h("div", { class: "tools" },
           ...TOOLS.filter((t) => t.group === g).map((t) =>
             h("a", { class: "tool", href: `#/tools/${t.id}` },
-              h("span", { class: "tool-icon" }, icon(t.icon, 24)),
+              toolTile(t),
               h("span", { class: "tool-text" }, h("strong", {}, t.title), h("span", {}, t.blurb))
             )
           )

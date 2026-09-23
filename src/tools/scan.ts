@@ -34,7 +34,8 @@ export const scanTool: Tool = {
   title: "Scan to PDF",
   blurb: "Photograph pages, straighten and clean them up, save as one PDF.",
   group: "Scan & create",
-  icon: '<path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2"/><path d="M4 12h16"/>',
+  icon: '<path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M4 12h16"/>',
+  tint: "#007AFF",
   render(root) {
     const pages: ScanPage[] = [];
     const prefs = getSettings();

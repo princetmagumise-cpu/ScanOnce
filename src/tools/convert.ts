@@ -13,7 +13,8 @@ export const convertTool: Tool = {
   title: "Convert",
   blurb: "PDF ⇄ Word, Excel, PowerPoint, plus Word ⇄ Excel ⇄ PowerPoint and images.",
   group: "Convert",
-  icon: '<path d="M4 7h13l-3-3M20 17H7l3 3"/>',
+  icon: '<path d="M4 8h15m0 0-3.5-3.5M19 8l-3.5 3.5"/><path d="M20 16H5m0 0 3.5-3.5M5 16l3.5 3.5"/>',
+  tint: "#5856D6",
   render(root) {
     let files: File[] = [];
     let target: Target | null = null;

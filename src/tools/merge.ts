@@ -10,7 +10,8 @@ export const mergeTool: Tool = {
   title: "Merge PDFs",
   blurb: "Combine PDFs and images into one PDF, in the order you choose.",
   group: "Organize",
-  icon: '<path d="M8 4v6a4 4 0 0 0 4 4h0a4 4 0 0 1 4 4v2M16 4v6a4 4 0 0 1-4 4"/>',
+  icon: '<rect x="5" y="9" width="14" height="12" rx="2.2"/><path d="M7 5.5h10M9 2.5h6"/>',
+  tint: "#FF9500",
   render(root) {
     const files: File[] = [];
     const out = h("div");

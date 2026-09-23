@@ -9,7 +9,8 @@ export const compressTool: Tool = {
   title: "Compress PDF",
   blurb: "Make PDFs smaller for email and uploads.",
   group: "Optimize & fix",
-  icon: '<path d="M8 3v5H3M16 3v5h5M8 21v-5H3M16 21v-5h5"/>',
+  icon: '<path d="M4 20l6-6m0 0v5m0-5H5"/><path d="M20 4l-6 6m0 0V5m0 5h5"/>',
+  tint: "#34C759",
   render(root) {
     let files: File[] = [];
     let level: Level = "balanced";

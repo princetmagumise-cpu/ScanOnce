@@ -11,7 +11,8 @@ export const organizeTool: Tool = {
   title: "Organize pages",
   blurb: "Reorder, rotate, delete, duplicate and insert pages.",
   group: "Organize",
-  icon: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+  icon: '<rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/>',
+  tint: "#30B0C7",
   render(root) {
     const sources: OpenedPdf[] = [];
     let cards: Card[] = [];

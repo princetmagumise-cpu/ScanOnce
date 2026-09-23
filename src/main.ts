@@ -1,6 +1,6 @@
 import "./style.css";
 import { registerSW } from "virtual:pwa-register";
-import { h, icon } from "./ui";
+import { h, icon, iconFilled } from "./ui";
 import { I } from "./icons";
 import { toolById } from "./tools";
 import { noteToolUsed } from "./lib/settings";
@@ -12,19 +12,23 @@ import { renderTools } from "./views/tools";
 import { renderSettings } from "./views/settings";
 
 type Tab = "home" | "files" | "tools" | "settings";
-const TABS: [Tab, string, string][] = [
-  ["home", "Home", I.home],
-  ["files", "Files", I.files],
-  ["tools", "Tools", I.tools],
-  ["settings", "Settings", I.settings]
+const TABS: [Tab, string, string, string][] = [
+  ["home", "Home", I.home, I.homeFill],
+  ["files", "Files", I.files, I.filesFill],
+  ["tools", "Tools", I.tools, I.toolsFill],
+  ["settings", "Settings", I.settings, I.settingsFill]
 ];
 
 const app = document.getElementById("app")!;
 let currentFolder: string | null = null;
 
-const tabLinks = TABS.map(([id, label, path]) =>
-  h("a", { class: "tab", href: `#/${id}`, "data-tab": id }, icon(path, 24), h("span", {}, label))
-);
+const tabLinks = TABS.map(([id, label, outline, filled]) => {
+  const off = icon(outline, 24);
+  const on = iconFilled(filled, 24);
+  off.classList.add("off");
+  on.classList.add("on");
+  return h("a", { class: "tab", href: `#/${id}`, "data-tab": id }, off, on, h("span", {}, label));
+});
 const newBtn = h("button", { class: "btn primary new-btn", onclick: () => addSheet(currentFolder) }, icon(I.plus, 18), "Add");
 const nav = h("nav", { class: "tabbar", "aria-label": "Sections" },
   h("div", { class: "brand" }, h("img", { src: "./icon.svg", alt: "", width: 28, height: 28 }), "ScanOnce"),
