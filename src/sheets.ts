@@ -31,10 +31,10 @@ export function addSheet(folderId: string | null = null) {
     });
   const s = sheet("Add", [
     h("div", { class: "list" },
-      row({ icon: I.scan, title: "Scan document", detail: "Camera with automatic page detection", onclick: () => { s.close(); location.hash = "#/tools/scan?camera"; } }),
-      row({ icon: I.camera, title: "Take photo", detail: "Use the camera app", onclick: () => { s.close(); pick("image/*", true, added); } }),
-      row({ icon: I.photo, title: "Photo library", detail: "Pictures and screenshots", onclick: () => { s.close(); pick("image/*", false, added); } }),
-      row({ icon: I.files, title: "Files", detail: "PDF, Word, Excel, PowerPoint… from Files or iCloud Drive", onclick: () => { s.close(); pick("", false, added); } })
+      row({ icon: I.scan, tint: "#007AFF", title: "Scan document", detail: "Camera with automatic page detection", onclick: () => { s.close(); location.hash = "#/tools/scan?camera"; } }),
+      row({ icon: I.camera, tint: "#8E8E93", title: "Take photo", detail: "Use the camera app", onclick: () => { s.close(); pick("image/*", true, added); } }),
+      row({ icon: I.photo, tint: "#FF9500", title: "Photo library", detail: "Pictures and screenshots", onclick: () => { s.close(); pick("image/*", false, added); } }),
+      row({ icon: I.files, tint: "#0A84FF", title: "Files", detail: "PDF, Word, Excel, PowerPoint… from Files or iCloud Drive", onclick: () => { s.close(); pick("", false, added); } })
     )
   ]);
 }
@@ -48,7 +48,7 @@ export function nextStepSheet(files: File[]) {
   const s = sheet(title, [
     h("p", { class: "muted small sheet-note" }, "Saved in Files. What would you like to do?"),
     h("div", { class: "list" },
-      ...tools.map((t) => row({ icon: t.icon, title: t.title, detail: t.blurb, onclick: () => { s.close(); openInTool(t.id, files); } }))
+      ...tools.map((t) => row({ icon: t.icon, tint: t.tint, title: t.title, detail: t.blurb, onclick: () => { s.close(); openInTool(t.id, files); } }))
     ),
     h("button", { class: "btn big", onclick: () => { s.close(); location.hash = "#/files"; } }, "Just keep it in Files")
   ]);
@@ -62,7 +62,7 @@ export async function fileSheet(meta: lib.LibFile) {
   const s = sheet(meta.name, [
     h("div", { class: "file-head" }, badge(meta.name, meta.type), h("span", { class: "muted small" }, `${formatSize(meta.size)} · added ${new Date(meta.created).toLocaleDateString()}`)),
     h("h4", { class: "list-label" }, "Open with"),
-    h("div", { class: "list" }, ...tools.map((t) => row({ icon: t.icon, title: t.title, onclick: () => { s.close(); lib.touch(meta.id); openInTool(t.id, [file]); } }))),
+    h("div", { class: "list" }, ...tools.map((t) => row({ icon: t.icon, tint: t.tint, title: t.title, onclick: () => { s.close(); lib.touch(meta.id); openInTool(t.id, [file]); } }))),
     h("div", { class: "list" }, ...[
       canShare([file]) ? row({ icon: I.share, title: "Share or save to Files", onclick: () => share([file]) }) : null,
       row({ icon: I.download, title: "Download", onclick: () => download(file) }),

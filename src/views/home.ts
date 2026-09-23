@@ -1,4 +1,4 @@
-import { h, icon, badge, ago } from "../ui";
+import { h, icon, badge, ago, toolTile } from "../ui";
 import { I } from "../icons";
 import { formatSize } from "../lib/files";
 import * as lib from "../lib/library";
@@ -38,7 +38,7 @@ export async function renderHome(root: HTMLElement) {
       h("div", { class: "row between" }, h("h2", {}, used.length ? "Recent tools" : "Get started"), h("a", { class: "see-all", href: "#/tools" }, "All tools")),
       h("div", { class: "tool-tiles" },
         ...tools.map((t) =>
-          h("a", { class: "tile", href: `#/tools/${t!.id}` }, h("span", { class: "tool-icon" }, icon(t!.icon, 24)), h("strong", {}, t!.title))
+          h("a", { class: "tile", href: `#/tools/${t!.id}` }, toolTile(t!), h("strong", {}, t!.title))
         )
       )
     )

@@ -37,6 +37,22 @@ export function icon(path: string, size = 22): SVGSVGElement {
   return svg;
 }
 
+/** Solid glyph (for selected tab bar items), filled with the current colour. */
+export function iconFilled(path: string, size = 22): SVGSVGElement {
+  const svg = icon(path, size);
+  svg.setAttribute("fill", "currentColor");
+  svg.setAttribute("fill-rule", "evenodd");
+  svg.setAttribute("stroke", "none");
+  return svg;
+}
+
+/** A tool's icon: white glyph on its colour tile. */
+export function toolTile(t: { icon: string; tint: string }, size = 24): HTMLElement {
+  const el = h("span", { class: "tool-icon", "aria-hidden": "true" }, icon(t.icon, size));
+  el.style.setProperty("--tint", t.tint);
+  return el;
+}
+
 // ---------- Toasts ----------
 
 export function toast(msg: string, kind: "info" | "error" = "info") {
@@ -368,9 +384,11 @@ export function sheet(title: string, body: (Node | null)[], onClose?: () => void
 }
 
 /** A tappable row for sheets and settings: icon, title, optional detail. */
-export function row(opts: { icon?: string; title: string; detail?: string; danger?: boolean; onclick: () => void }): HTMLElement {
+export function row(opts: { icon?: string; tint?: string; title: string; detail?: string; danger?: boolean; onclick: () => void }): HTMLElement {
+  const glyph = opts.icon ? h("span", { class: `row-icon${opts.tint ? " tile-icon" : ""}`, "aria-hidden": "true" }, icon(opts.icon, 22)) : null;
+  if (glyph && opts.tint) glyph.style.setProperty("--tint", opts.tint);
   return h("button", { class: `list-row${opts.danger ? " danger" : ""}`, onclick: opts.onclick },
-    opts.icon ? h("span", { class: "row-icon" }, icon(opts.icon, 20)) : null,
+    glyph,
     h("span", { class: "row-text" }, h("span", {}, opts.title), opts.detail ? h("span", { class: "muted small" }, opts.detail) : null),
     icon('<path d="m9 18 6-6-6-6"/>', 16)
   );
