@@ -5,6 +5,7 @@ import { detectPage, fullQuad, warp, applyFilter, type Quad, type Filter } from 
 import { imagesToPdf, savePdf, type PageSize, type PdfImage } from "../lib/pdfops";
 import { makeFile } from "../lib/files";
 import { LANGUAGES } from "../lib/languages";
+import { getSettings } from "../lib/settings";
 
 interface ScanPage {
   original: HTMLCanvasElement;
@@ -36,10 +37,11 @@ export const scanTool: Tool = {
   icon: '<path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2"/><path d="M4 12h16"/>',
   render(root) {
     const pages: ScanPage[] = [];
-    let size: PageSize = "a4";
-    let defaultFilter: Filter = "enhance";
+    const prefs = getSettings();
+    let size: PageSize = prefs.pageSize;
+    let defaultFilter: Filter = prefs.scanFilter;
     let ocr = false;
-    let lang = "eng";
+    let lang = prefs.ocrLang;
     const grid = h("div", { class: "pages" });
     const out = h("div");
     const nameInput = h("input", { class: "input", value: `Scan ${new Date().toISOString().slice(0, 10)}` });
@@ -156,7 +158,7 @@ export const scanTool: Tool = {
         h("span", {}, "Make text searchable (OCR)")
       ),
       (() => {
-        const sel = h("select", { class: "input", onchange: () => (lang = sel.value) }, ...LANGUAGES.map(([v, l]) => h("option", { value: v }, l)));
+        const sel = h("select", { class: "input", onchange: () => (lang = sel.value) }, ...LANGUAGES.map(([v, l]) => h("option", { value: v, selected: v === lang }, l)));
         return (langField = field("Text language", sel, "Language data downloads once, then works offline."));
       })(),
       h("button", { class: "btn primary big", onclick: create }, "Create PDF")
@@ -172,7 +174,13 @@ export const scanTool: Tool = {
       actions,
       out
     );
-    if (!navigator.mediaDevices?.getUserMedia) cameraBtn.hidden = true;
+    const hasCamera = typeof navigator.mediaDevices?.getUserMedia === "function";
+    if (!hasCamera) cameraBtn.hidden = true;
+    // Arriving from ＋ → Scan document: go straight to the camera.
+    if (location.hash.includes("?camera")) {
+      history.replaceState(null, "", "#/tools/scan");
+      if (hasCamera) openCamera(async (c) => { await addCanvas(c); redraw(); });
+    }
   }
 };
 

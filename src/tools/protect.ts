@@ -1,5 +1,5 @@
 import type { Tool } from "./types";
-import { h, dropZone, results, run, field, segmented, askPassword, toast } from "../ui";
+import { h, dropZone, results, run, field, segmented, askPassword, toast, formatList } from "../ui";
 import { makeFile, baseName, readBytes } from "../lib/files";
 import { encryptPdf } from "../lib/qpdf";
 import { openPdf, unlockBytes } from "../lib/pdfops";
@@ -13,20 +13,24 @@ export const protectTool: Tool = {
   icon: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
   render(root) {
     let mode: "add" | "remove" = "add";
+    let files: File[] = [];
     const out = h("div");
-    const body = h("div");
+    const body = h("div", { class: "stack" });
     const pw = h("input", { class: "input", type: "password", autocomplete: "new-password" });
     const pw2 = h("input", { class: "input", type: "password", autocomplete: "new-password" });
     const owner = h("input", { class: "input", type: "password", autocomplete: "new-password" });
     const perms = { print: true, copy: false, modify: false };
     const check = (label: string, key: keyof typeof perms) =>
       h("label", { class: "check" }, h("input", { type: "checkbox", checked: perms[key], onchange: (e: Event) => (perms[key] = (e.target as HTMLInputElement).checked) }), h("span", {}, label));
+    const chosen = h("div");
 
     const draw = () => {
       out.replaceChildren();
       if (mode === "add") {
+        chosen.replaceChildren(...(files.length ? [formatList(files)] : []));
         body.replaceChildren(
-          dropZone({ accept: ".pdf,application/pdf", multiple: true, label: "Choose PDFs to protect", onFiles: add }),
+          dropZone({ accept: ".pdf,application/pdf", multiple: true, label: "Choose PDFs to protect", onFiles: (fs) => { files = fs; draw(); } }),
+          chosen,
           field("Password", pw, "Needed to open the PDF. Use at least 6 characters."),
           field("Confirm password", pw2),
           h("details", {},
@@ -34,15 +38,17 @@ export const protectTool: Tool = {
             h("p", { class: "muted small" }, "Limits what people can do after opening. Most PDF apps respect these, but they aren't as strong as the password itself."),
             check("Allow printing", "print"), check("Allow copying text", "copy"), check("Allow editing", "modify"),
             field("Permissions password", owner, "Lets you change these later. Leave empty to generate one.")
-          )
+          ),
+          h("button", { class: "btn primary big", onclick: add }, "Protect")
         );
       } else {
         body.replaceChildren(dropZone({ accept: ".pdf,application/pdf", label: "Choose a protected PDF", hint: "You'll need its password", onFiles: ([f]) => remove(f) }));
       }
     };
 
-    const add = (files: File[]) => {
-      if (pw.value.length < 6) return toast("Type a password of at least 6 characters first.", "error");
+    const add = () => {
+      if (!files.length) return toast("Choose at least one PDF first.", "error");
+      if (pw.value.length < 6) return toast("Use a password of at least 6 characters.", "error");
       if (pw.value !== pw2.value) return toast("The passwords don't match.", "error");
       run("Protecting…", async () => {
         const outs: File[] = [];

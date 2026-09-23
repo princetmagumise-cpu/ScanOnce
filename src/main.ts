@@ -1,74 +1,92 @@
 import "./style.css";
 import { registerSW } from "virtual:pwa-register";
 import { h, icon } from "./ui";
-import type { Tool } from "./tools/types";
-import { scanTool } from "./tools/scan";
-import { convertTool } from "./tools/convert";
-import { mergeTool } from "./tools/merge";
-import { splitTool } from "./tools/split";
-import { organizeTool } from "./tools/organize";
-import { extractTool } from "./tools/extract";
-import { compressTool } from "./tools/compress";
-import { ocrTool } from "./tools/ocr";
-import { repairTool } from "./tools/repair";
-import { protectTool } from "./tools/protect";
-import { lockTool } from "./tools/lock";
+import { I } from "./icons";
+import { toolById } from "./tools";
+import { noteToolUsed } from "./lib/settings";
+import * as lib from "./lib/library";
+import { addSheet } from "./sheets";
+import { renderHome } from "./views/home";
+import { renderFiles } from "./views/files";
+import { renderTools } from "./views/tools";
+import { renderSettings } from "./views/settings";
 
-const TOOLS: Tool[] = [
-  scanTool, convertTool,
-  mergeTool, splitTool, organizeTool, extractTool,
-  compressTool, ocrTool, repairTool,
-  protectTool, lockTool
+type Tab = "home" | "files" | "tools" | "settings";
+const TABS: [Tab, string, string][] = [
+  ["home", "Home", I.home],
+  ["files", "Files", I.files],
+  ["tools", "Tools", I.tools],
+  ["settings", "Settings", I.settings]
 ];
-const GROUPS: Tool["group"][] = ["Scan & create", "Convert", "Organize", "Optimize & fix", "Security"];
 
 const app = document.getElementById("app")!;
+let currentFolder: string | null = null;
 
-function home() {
-  document.title = "ScanOnce";
-  app.replaceChildren(
-    h("header", { class: "hero" },
-      h("h1", {}, "ScanOnce"),
-      h("p", {}, "Scan, convert and fix documents. Your files stay on this device and are never uploaded.")
-    ),
-    ...GROUPS.map((g) =>
-      h("section", { class: "group" },
-        h("h2", {}, g),
-        h("div", { class: "tools" },
-          ...TOOLS.filter((t) => t.group === g).map((t) =>
-            h("a", { class: "tool", href: `#/${t.id}` },
-              h("span", { class: "tool-icon" }, icon(t.icon, 24)),
-              h("span", { class: "tool-text" }, h("strong", {}, t.title), h("span", {}, t.blurb))
-            )
-          )
-        )
-      )
-    ),
-    h("footer", { class: "foot muted small" }, "Works offline after the first visit. Install it: iPhone Safari → Share → Add to Home Screen. Windows Edge/Chrome → Install app.")
-  );
+const tabLinks = TABS.map(([id, label, path]) =>
+  h("a", { class: "tab", href: `#/${id}`, "data-tab": id }, icon(path, 24), h("span", {}, label))
+);
+const newBtn = h("button", { class: "btn primary new-btn", onclick: () => addSheet(currentFolder) }, icon(I.plus, 18), "Add");
+const nav = h("nav", { class: "tabbar", "aria-label": "Sections" },
+  h("div", { class: "brand" }, h("img", { src: "./icon.svg", alt: "", width: 28, height: 28 }), "ScanOnce"),
+  newBtn,
+  ...tabLinks
+);
+const fab = h("button", { class: "fab", "aria-label": "Add: scan, take a photo or choose a file", onclick: () => addSheet(currentFolder) }, icon(I.plus, 28));
+document.body.append(nav, fab);
+
+function parse(): { tab: Tab; rest: string } {
+  const path = location.hash.replace(/^#\/?/, "").split("?")[0];
+  const [first, ...rest] = path.split("/");
+  if ((TABS.map((t) => t[0]) as string[]).includes(first)) return { tab: first as Tab, rest: rest.join("/") };
+  if (toolById(first)) return { tab: "tools", rest: first }; // old links like #/merge
+  return { tab: "home", rest: "" };
 }
 
-function show(tool: Tool) {
-  document.title = `${tool.title} · ScanOnce`;
-  const body = h("div", { class: "tool-body" });
-  app.replaceChildren(
-    h("header", { class: "bar" },
-      h("a", { class: "back", href: "#/", "aria-label": "All tools" }, icon('<path d="m15 18-6-6 6-6"/>', 22), h("span", {}, "Tools")),
-      h("h1", {}, tool.title)
-    ),
-    h("p", { class: "lead muted" }, tool.blurb),
-    body
-  );
-  tool.render(body);
+let renderSeq = 0;
+async function route() {
+  const seq = ++renderSeq;
+  const { tab, rest } = parse();
+  const view = h("div", { class: "view" });
+  tabLinks.forEach((a) => (a.dataset.tab === tab ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
+  const tool = tab === "tools" && rest ? toolById(rest) : undefined;
+  fab.hidden = !!tool || tab === "settings";
+  currentFolder = tab === "files" && rest ? rest : null;
+
+  if (tool) {
+    document.title = `${tool.title} · ScanOnce`;
+    noteToolUsed(tool.id);
+    const body = h("div", { class: "tool-body" });
+    view.append(
+      h("header", { class: "bar" },
+        h("a", { class: "back", href: "#/tools", "aria-label": "Back to all tools" }, icon(I.back, 22), h("span", {}, "Tools")),
+        h("h1", {}, tool.title)
+      ),
+      h("p", { class: "lead muted" }, tool.blurb),
+      body
+    );
+    app.replaceChildren(view);
+    tool.render(body);
+  } else {
+    document.title = tab === "home" ? "ScanOnce" : `${TABS.find((t) => t[0] === tab)![1]} · ScanOnce`;
+    if (tab === "home") await renderHome(view);
+    else if (tab === "files") await renderFiles(view, currentFolder);
+    else if (tab === "tools") renderTools(view);
+    else await renderSettings(view);
+    if (seq !== renderSeq) return; // a newer navigation won
+    app.replaceChildren(view);
+  }
+  if (!tool || !location.hash.includes("?")) window.scrollTo(0, 0);
 }
 
-function route() {
-  const id = location.hash.replace(/^#\/?/, "");
-  const tool = TOOLS.find((t) => t.id === id);
-  if (tool) show(tool);
-  else home();
-  window.scrollTo(0, 0);
-}
+// Keep Home and Files current when the library changes; never reset a tool mid-task.
+lib.onChange(() => {
+  const { tab, rest } = parse();
+  if (tab === "home" || (tab === "files") || (tab === "settings")) {
+    const y = window.scrollY;
+    route().then(() => window.scrollTo(0, y));
+  }
+  void rest;
+});
 
 window.addEventListener("hashchange", route);
 route();

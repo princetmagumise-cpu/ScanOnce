@@ -1,5 +1,5 @@
 import type { Tool } from "./types";
-import { h, dropZone, results, run, field, segmented, toast } from "../ui";
+import { h, dropZone, results, run, field, segmented, toast, formatList } from "../ui";
 import { makeFile, readBytes } from "../lib/files";
 import { lockBytes, unlockBytes, isLocked } from "../lib/vault";
 
@@ -11,30 +11,38 @@ export const lockTool: Tool = {
   icon: '<path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6Z"/><path d="M9.5 12.5 11 14l3.5-3.5"/>',
   render(root) {
     let mode: "lock" | "unlock" = "lock";
+    let files: File[] = [];
     const out = h("div");
-    const body = h("div");
+    const body = h("div", { class: "stack" });
     const pw = h("input", { class: "input", type: "password", autocomplete: "new-password" });
     const pw2 = h("input", { class: "input", type: "password", autocomplete: "new-password" });
     const upw = h("input", { class: "input", type: "password", autocomplete: "current-password" });
 
     const draw = () => {
       out.replaceChildren();
+      const picked = files.length ? formatList(files) : null;
       body.replaceChildren(
         ...(mode === "lock"
           ? [
+              // Originals aren't copied into the library: that would defeat locking them.
+              dropZone({ accept: "*/*", multiple: true, remember: false, label: "Choose files to lock", onFiles: (fs) => { files = fs; draw(); } }),
+              picked,
               field("Password", pw, "At least 6 characters. There's no way to recover a forgotten password."),
               field("Confirm password", pw2),
-              dropZone({ accept: "*/*", multiple: true, label: "Choose files to lock", onFiles: lock })
+              h("button", { class: "btn primary big", onclick: lock }, "Lock")
             ]
           : [
+              dropZone({ accept: ".locked", multiple: true, label: "Choose .locked files", onFiles: (fs) => { files = fs; draw(); } }),
+              picked,
               field("Password", upw),
-              dropZone({ accept: ".locked", multiple: true, label: "Choose .locked files", onFiles: unlock })
-            ])
+              h("button", { class: "btn primary big", onclick: unlock }, "Unlock")
+            ]).filter((x): x is HTMLElement => !!x)
       );
     };
 
-    const lock = (files: File[]) => {
-      if (pw.value.length < 6) return toast("Type a password of at least 6 characters first.", "error");
+    const lock = () => {
+      if (!files.length) return toast("Choose at least one file first.", "error");
+      if (pw.value.length < 6) return toast("Use a password of at least 6 characters.", "error");
       if (pw.value !== pw2.value) return toast("The passwords don't match.", "error");
       run("Locking…", async () => {
         const outs: File[] = [];
@@ -43,7 +51,8 @@ export const lockTool: Tool = {
       });
     };
 
-    const unlock = (files: File[]) => {
+    const unlock = () => {
+      if (!files.length) return toast("Choose a .locked file first.", "error");
       if (!upw.value) return toast("Type the password first.", "error");
       run("Unlocking…", async () => {
         const outs: File[] = [];
@@ -53,13 +62,14 @@ export const lockTool: Tool = {
           const { name, content } = await unlockBytes(bytes, upw.value);
           outs.push(makeFile(content, name));
         }
-        results(out, outs);
+        // Unlocked originals are handed back, not stored in the library.
+        results(out, outs, undefined, { save: false });
       });
     };
 
     root.append(
       h("section", { class: "card" },
-        segmented("lmode", [["lock", "Lock"], ["unlock", "Unlock"]], mode, (v) => { mode = v; draw(); }),
+        segmented("lmode", [["lock", "Lock"], ["unlock", "Unlock"]], mode, (v) => { mode = v; files = []; draw(); }),
         body
       ),
       out

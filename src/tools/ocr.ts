@@ -3,6 +3,7 @@ import { h, dropZone, results, run, field, busy, askPassword, toast } from "../u
 import { kindOf, makeFile, baseName } from "../lib/files";
 import { openPdf } from "../lib/pdfops";
 import { LANGUAGES } from "../lib/languages";
+import { getSettings } from "../lib/settings";
 
 export const ocrTool: Tool = {
   id: "ocr",
@@ -13,7 +14,8 @@ export const ocrTool: Tool = {
   render(root) {
     let files: File[] = [];
     const out = h("div");
-    const sel = h("select", { class: "input" }, ...LANGUAGES.map(([v, l]) => h("option", { value: v }, l)));
+    const lang = getSettings().ocrLang;
+    const sel = h("select", { class: "input" }, ...LANGUAGES.map(([v, l]) => h("option", { value: v, selected: v === lang }, l)));
     const second = h("select", { class: "input" }, h("option", { value: "" }, "None"), ...LANGUAGES.map(([v, l]) => h("option", { value: v }, l)));
     const list = h("ul", { class: "filelist" });
     const opts = h("section", { class: "card", hidden: true },
