@@ -6,9 +6,10 @@ export interface Settings {
   pageSize: "a4" | "letter" | "fit";
   scanFilter: "enhance" | "original" | "gray" | "bw";
   ocrLang: string;
+  autoCapture: boolean;
 }
 
-const DEFAULTS: Settings = { saveToLibrary: true, pageSize: "a4", scanFilter: "enhance", ocrLang: "eng" };
+const DEFAULTS: Settings = { saveToLibrary: true, pageSize: "a4", scanFilter: "enhance", ocrLang: "eng", autoCapture: true };
 const KEY = "scanonce.settings";
 
 export function getSettings(): Settings {

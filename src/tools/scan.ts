@@ -2,10 +2,11 @@ import type { Tool } from "./types";
 import { h, icon, dropZone, results, run, segmented, field, toast, dialog, busy } from "../ui";
 import { fileToCanvas, canvasToBytes, rotateCanvas, makeCanvas, nextFrame } from "../lib/image";
 import { detectPage, fullQuad, warp, applyFilter, type Quad, type Filter } from "../lib/scan";
+import { AutoCapture, frameDiff } from "../lib/autocapture";
 import { imagesToPdf, savePdf, type PageSize, type PdfImage } from "../lib/pdfops";
 import { makeFile } from "../lib/files";
 import { LANGUAGES } from "../lib/languages";
-import { getSettings } from "../lib/settings";
+import { getSettings, setSetting } from "../lib/settings";
 
 interface ScanPage {
   original: HTMLCanvasElement;
@@ -244,7 +245,7 @@ function cropEditor(src: HTMLCanvasElement, initial: Quad) {
   };
 }
 
-/** Full-screen live camera (webcams on laptops, or the phone camera). */
+/** Full-screen live camera (webcams on laptops, or the phone camera), with hands-free capture. */
 async function openCamera(onShot: (c: HTMLCanvasElement) => Promise<void>) {
   let stream: MediaStream;
   try {
@@ -259,22 +260,121 @@ async function openCamera(onShot: (c: HTMLCanvasElement) => Promise<void>) {
   const video = h("video", { autoplay: true, playsinline: true, muted: true }) as HTMLVideoElement;
   video.srcObject = stream;
   let count = 0;
+  let busyShot = false;
+  let auto = getSettings().autoCapture;
+  const machine = new AutoCapture();
+
   const counter = h("span", { class: "cam-count" }, "0 pages");
-  const close = () => { stream.getTracks().forEach((t) => t.stop()); overlay.remove(); };
-  const shoot = async () => {
-    if (!video.videoWidth) return;
+  const status = h("div", { class: "cam-status", role: "status", "aria-live": "polite" });
+  const big = h("div", { class: "cam-countdown", "aria-hidden": "true" });
+  const guide = h("canvas", { class: "cam-guide", "aria-hidden": "true" }) as HTMLCanvasElement;
+  const autoBtn = h("button", { class: "cam-auto", "aria-pressed": String(auto), onclick: () => {
+    auto = !auto;
+    setSetting("autoCapture", auto);
+    autoBtn.setAttribute("aria-pressed", String(auto));
+    autoBtn.textContent = auto ? "Auto" : "Auto off";
+    machine.reset();
+    anchor = null;
+    say(auto ? "Looking for a document" : "Tap the shutter to take a picture");
+    big.textContent = "";
+  } }, auto ? "Auto" : "Auto off");
+
+  let lastSay = "";
+  const say = (t: string) => { if (t !== lastSay) { status.textContent = t; lastSay = t; } };
+  say(auto ? "Looking for a document" : "Tap the shutter to take a picture");
+
+  const shoot = async (manual: boolean) => {
+    if (!video.videoWidth || busyShot) return;
+    busyShot = true;
     const c = makeCanvas(video.videoWidth, video.videoHeight);
     c.getContext("2d")!.drawImage(video, 0, 0);
     overlay.classList.add("flash");
     setTimeout(() => overlay.classList.remove("flash"), 150);
+    big.textContent = "";
+    if (manual) { machine.captured(); anchor = prev; }
     await onShot(c);
     counter.textContent = `${++count} page${count === 1 ? "" : "s"}`;
+    say(auto ? "Captured. Turn the page or move to the next one." : "Captured");
+    busyShot = false;
+  };
+
+  // Sample small grayscale frames to measure movement; detect the page less often.
+  const SW = 96;
+  const sample = makeCanvas(SW, 72);
+  const sctx = sample.getContext("2d", { willReadFrequently: true })!;
+  const detectCanvas = makeCanvas(320, 240);
+  let prev: Uint8Array | null = null;
+  let anchor: Uint8Array | null = null;
+  let quad: Quad | null = null;
+  let tick = 0;
+
+  const grab = (): Uint8Array => {
+    const vh = Math.round((SW * video.videoHeight) / video.videoWidth) || 72;
+    if (sample.height !== vh) sample.height = vh;
+    sctx.drawImage(video, 0, 0, SW, vh);
+    const px = sctx.getImageData(0, 0, SW, vh).data;
+    const g = new Uint8Array(SW * vh);
+    for (let i = 0; i < g.length; i++) g[i] = (px[i * 4] * 299 + px[i * 4 + 1] * 587 + px[i * 4 + 2] * 114) / 1000;
+    return g;
+  };
+
+  const drawGuide = () => {
+    const bw = guide.clientWidth, bh = guide.clientHeight;
+    const dpr = window.devicePixelRatio || 1;
+    if (guide.width !== Math.round(bw * dpr)) { guide.width = Math.round(bw * dpr); guide.height = Math.round(bh * dpr); }
+    const g = guide.getContext("2d")!;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, bw, bh);
+    if (!quad || !video.videoWidth) return;
+    // The video is letterboxed (object-fit: contain); map detection coordinates onto it.
+    const s = Math.min(bw / video.videoWidth, bh / video.videoHeight);
+    const ox = (bw - video.videoWidth * s) / 2, oy = (bh - video.videoHeight * s) / 2;
+    const k = video.videoWidth / detectCanvas.width;
+    g.beginPath();
+    quad.forEach((p, i) => (i ? g.lineTo : g.moveTo).call(g, ox + p.x * k * s, oy + p.y * k * s));
+    g.closePath();
+    const counting = machine.phase === "counting";
+    g.fillStyle = counting ? "rgb(10 132 255 / 22%)" : "rgb(255 255 255 / 10%)";
+    g.fill();
+    g.lineWidth = 3;
+    g.strokeStyle = counting ? "#0a84ff" : "rgb(255 255 255 / 85%)";
+    g.stroke();
+  };
+
+  const loop = setInterval(() => {
+    if (!video.videoWidth || busyShot) return;
+    const cur = grab();
+    const motion = prev ? frameDiff(prev, cur) : 255;
+    prev = cur;
+    if (tick++ % 3 === 0) {
+      detectCanvas.height = Math.round((detectCanvas.width * video.videoHeight) / video.videoWidth);
+      detectCanvas.getContext("2d")!.drawImage(video, 0, 0, detectCanvas.width, detectCanvas.height);
+      quad = detectPage(detectCanvas);
+    }
+    drawGuide();
+    if (!auto) return;
+    const step = machine.step(performance.now(), motion, anchor ? frameDiff(anchor, cur) : 255);
+    if (step.anchor) anchor = cur;
+    if (step.capture) { shoot(false); return; }
+    if (step.phase === "counting") {
+      big.textContent = String(step.remaining);
+      say("Hold still");
+    } else {
+      big.textContent = "";
+      if (step.phase === "waiting") say(quad ? "Hold steady to capture" : "Looking for a document");
+    }
+  }, 150);
+
+  const close = () => {
+    clearInterval(loop);
+    stream.getTracks().forEach((t) => t.stop());
+    overlay.remove();
   };
   const overlay = h("div", { class: "camera" },
-    video,
+    h("div", { class: "cam-view" }, video, guide, big, h("div", { class: "cam-top" }, status, autoBtn)),
     h("div", { class: "cam-bar" },
       h("button", { class: "btn", onclick: close }, "Done"),
-      h("button", { class: "shutter", "aria-label": "Take picture", onclick: shoot }),
+      h("button", { class: "shutter", "aria-label": "Take picture", onclick: () => shoot(true) }),
       counter
     )
   );
