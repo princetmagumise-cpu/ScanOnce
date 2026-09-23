@@ -40,6 +40,7 @@ export async function renderSettings(root: HTMLElement) {
     ),
     h("section", { class: "card" },
       h("h2", { class: "card-title" }, "Scanning"),
+      toggle("Auto capture", "Takes the picture after the camera holds still for 3 seconds.", s.autoCapture, (v) => setSetting("autoCapture", v)),
       field("Page size", select(s.pageSize, [["a4", "A4"], ["letter", "Letter"], ["fit", "Fit to photo"]], (v) => setSetting("pageSize", v))),
       field("Colour", select(s.scanFilter, [["enhance", "Auto"], ["original", "Original"], ["gray", "Grayscale"], ["bw", "Black & white"]], (v) => setSetting("scanFilter", v))),
       field("Text language (OCR)", select(s.ocrLang, LANGUAGES as [string, string][], (v) => setSetting("ocrLang", v)))
