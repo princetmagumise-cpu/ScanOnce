@@ -1,0 +1,38 @@
+{
+  "name": "scanonce",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ScanOnce: scan, convert, compress, OCR, protect and organize PDFs on iPhone and Windows. Everything runs on your device.",
+  "type": "module",
+  "scripts": {
+    "predev": "node scripts/copy-pdfjs-assets.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/copy-pdfjs-assets.mjs",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "icons": "node scripts/make-icons.mjs"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@neslinesli93/qpdf-wasm": "^0.3.0",
+    "@pdf-lib/fontkit": "^1.1.1",
+    "@xmldom/xmldom": "^0.9.12",
+    "dejavu-fonts-ttf": "^2.37.3",
+    "docx": "^9.7.1",
+    "exceljs": "^4.4.0",
+    "jszip": "^3.10.2",
+    "mammoth": "^1.12.3",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.3.289",
+    "pptxgenjs": "^4.0.1",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "happy-dom": "^20.14.5",
+    "typescript": "5.9",
+    "vite": "^8.3.0",
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^5.0.1"
+  }
+}
